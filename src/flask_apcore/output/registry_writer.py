@@ -93,6 +93,12 @@ class RegistryWriter:
 
             annotations_dict = asdict(mod.annotations)
 
+        metadata = {
+            **(mod.metadata or {}),
+            "http_method": mod.http_method,
+            "url_rule": mod.url_rule,
+        }
+
         return FunctionModule(
             func=func,
             module_id=mod.module_id,
@@ -101,5 +107,5 @@ class RegistryWriter:
             tags=mod.tags,
             version=mod.version,
             annotations=annotations_dict,
-            metadata=mod.metadata,
+            metadata=metadata,
         )

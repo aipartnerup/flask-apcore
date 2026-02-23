@@ -158,6 +158,24 @@ class TestRegistryWriter:
         fm = registry.get("test.get")
         assert fm.tags == ["api", "users"]
 
+    def test_http_method_and_url_rule_in_metadata(self):
+        """http_method and url_rule must be preserved in FunctionModule metadata."""
+        writer = RegistryWriter()
+        registry = Registry()
+        modules = [_make_module(
+            module_id="items.get",
+            http_method="GET",
+            url_rule="/items",
+            metadata={"source": "native"},
+        )]
+
+        writer.write(modules, registry)
+
+        fm = registry.get("items.get")
+        assert fm.metadata["http_method"] == "GET"
+        assert fm.metadata["url_rule"] == "/items"
+        assert fm.metadata["source"] == "native"  # original metadata preserved
+
     def test_empty_modules_list(self):
         writer = RegistryWriter()
         registry = Registry()
