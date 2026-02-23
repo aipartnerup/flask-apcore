@@ -38,6 +38,16 @@ def create_order() -> dict:
     return {}
 
 
+def list_tasks() -> dict:
+    """List all tasks."""
+    return {"tasks": []}
+
+
+def create_task() -> dict:
+    """Create a task."""
+    return {"id": 1}
+
+
 # ---------------------------------------------------------------------------
 # TestScanAndRegister: scan -> register to Registry -> verify
 # ---------------------------------------------------------------------------
@@ -483,3 +493,59 @@ class TestMultiAppIsolation:
         # app1 has modules, app2 doesn't
         assert app1.extensions["apcore"]["registry"].count >= 1
         assert app2.extensions["apcore"]["registry"].count == 0
+
+
+# ---------------------------------------------------------------------------
+# TestExplorerIntegration: scan -> register -> explore via HTTP
+# ---------------------------------------------------------------------------
+
+
+class TestExplorerIntegration:
+    """End-to-end: scan -> register -> explore via HTTP."""
+
+    def test_scan_then_explore(self, tmp_path):
+        from flask import Flask
+        from flask_apcore import Apcore
+
+        app = Flask(__name__)
+        app.config["TESTING"] = True
+        app.config["APCORE_MODULE_DIR"] = str(tmp_path / "modules")
+        app.config["APCORE_AUTO_DISCOVER"] = False
+        app.config["APCORE_EXPLORER_ENABLED"] = True
+
+        app.add_url_rule("/tasks", "list_tasks", list_tasks, methods=["GET"])
+        app.add_url_rule("/tasks", "create_task", create_task, methods=["POST"])
+
+        Apcore(app)
+
+        # Scan and register via CLI (exclude explorer blueprint's own routes)
+        runner = app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "scan", "--exclude", r"^apcore_explorer\."])
+        assert result.exit_code == 0
+
+        # Explore via HTTP
+        client = app.test_client()
+
+        # List modules
+        resp = client.get("/apcore/modules")
+        assert resp.status_code == 200
+        modules = resp.get_json()
+        assert len(modules) >= 2
+
+        # Get detail
+        mid = modules[0]["module_id"]
+        resp = client.get(f"/apcore/modules/{mid}")
+        assert resp.status_code == 200
+        detail = resp.get_json()
+        assert "input_schema" in detail
+
+        # OpenAPI spec
+        resp = client.get("/apcore/openapi.json")
+        assert resp.status_code == 200
+        spec = resp.get_json()
+        assert spec["openapi"] == "3.1.0"
+
+        # HTML page
+        resp = client.get("/apcore/")
+        assert resp.status_code == 200
+        assert b"apcore Explorer" in resp.data
