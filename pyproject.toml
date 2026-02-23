@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flask-apcore"
+version = "0.1.0"
+description = "Flask Extension for apcore AI-Perceivable Core integration"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    { name = "aipartnerup", email = "tercel.yi@gmail.com" },
+]
+dependencies = [
+    "flask>=3.0",
+    "apcore>=0.6.0",
+    "pydantic>=2.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+smorest = ["flask-smorest>=0.42"]
+restx = ["flask-restx>=1.0"]
+mcp = ["apcore-mcp>=0.4.0"]
+dev = [
+    "pytest>=7.0",
+    "pytest-flask>=1.0",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.1",
+    "mypy>=1.0",
+    "pre-commit>=3.0",
+    "coverage>=7.0",
+    "apdev[dev]>=0.1.6",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flask_apcore"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+src = ["src"]
+target-version = "py311"
+line-length = 120
+
+[tool.apdev]
+base_package = "flask_apcore"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true

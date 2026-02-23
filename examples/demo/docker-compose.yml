@@ -1,0 +1,9 @@
+services:
+  demo:
+    build:
+      context: ../..
+      dockerfile: examples/demo/Dockerfile
+    ports:
+      - "9100:9100"
+    environment:
+      - FLASK_APP=app.py
