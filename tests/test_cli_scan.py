@@ -294,3 +294,29 @@ class TestScanJSONOutput:
         assert json_file.exists()
         data = json.loads(json_file.read_text())
         assert len(data) >= 3
+
+
+# ---------------------------------------------------------------------------
+# --output openapi -> generates openapi.json file
+# ---------------------------------------------------------------------------
+
+
+class TestScanOpenAPIOutput:
+    """--output openapi generates openapi.json file."""
+
+    def test_openapi_output_creates_file(self, scan_app, tmp_path):
+        out_dir = str(tmp_path / "openapi_out")
+        runner = scan_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "scan", "--output", "openapi", "--dir", out_dir])
+
+        assert result.exit_code == 0, result.output
+        assert "Generated" in result.output
+
+        from pathlib import Path
+        import json
+
+        spec_file = Path(out_dir) / "openapi.json"
+        assert spec_file.exists()
+        spec = json.loads(spec_file.read_text())
+        assert spec["openapi"] == "3.1.0"
+        assert len(spec["paths"]) >= 2
