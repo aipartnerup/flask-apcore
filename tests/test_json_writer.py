@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
-import pytest
 from apcore import ModuleAnnotations
 
 from flask_apcore.scanners.base import ScannedModule
