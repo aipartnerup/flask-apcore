@@ -40,6 +40,10 @@ DEFAULT_LOGGING_ENABLED = False
 DEFAULT_LOGGING_FORMAT = "json"
 DEFAULT_LOGGING_LEVEL = "INFO"
 
+# Explorer defaults
+DEFAULT_EXPLORER_ENABLED = False
+DEFAULT_EXPLORER_URL_PREFIX = "/apcore"
+
 # ---------------------------------------------------------------------------
 # Valid choices
 # ---------------------------------------------------------------------------
@@ -91,6 +95,10 @@ class ApcoreSettings:
 
     # New Extensions
     extensions: list[str]
+
+    # Explorer
+    explorer_enabled: bool
+    explorer_url_prefix: str
 
 
 def load_settings(app: Flask) -> ApcoreSettings:
@@ -315,6 +323,23 @@ def load_settings(app: Flask) -> ApcoreSettings:
     if not isinstance(extensions, list) or not all(isinstance(e, str) for e in extensions):
         raise ValueError("APCORE_EXTENSIONS must be a list of dotted path strings.")
 
+    # === Explorer settings ===
+
+    # --- explorer_enabled ---
+    explorer_enabled = app.config.get("APCORE_EXPLORER_ENABLED", DEFAULT_EXPLORER_ENABLED)
+    if explorer_enabled is None:
+        explorer_enabled = DEFAULT_EXPLORER_ENABLED
+    if not isinstance(explorer_enabled, bool):
+        actual = type(explorer_enabled).__name__
+        raise ValueError(f"APCORE_EXPLORER_ENABLED must be a boolean. Got: {actual}")
+
+    # --- explorer_url_prefix ---
+    explorer_url_prefix = app.config.get("APCORE_EXPLORER_URL_PREFIX", DEFAULT_EXPLORER_URL_PREFIX)
+    if explorer_url_prefix is None:
+        explorer_url_prefix = DEFAULT_EXPLORER_URL_PREFIX
+    if not isinstance(explorer_url_prefix, str) or len(explorer_url_prefix) == 0:
+        raise ValueError("APCORE_EXPLORER_URL_PREFIX must be a non-empty string.")
+
     return ApcoreSettings(
         module_dir=module_dir,
         auto_discover=auto_discover,
@@ -342,4 +367,6 @@ def load_settings(app: Flask) -> ApcoreSettings:
         logging_format=logging_format,
         logging_level=logging_level,
         extensions=extensions,
+        explorer_enabled=explorer_enabled,
+        explorer_url_prefix=explorer_url_prefix,
     )

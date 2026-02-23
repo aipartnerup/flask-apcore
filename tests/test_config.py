@@ -82,6 +82,10 @@ class TestAllDefaults:
         # New Extensions
         assert settings.extensions == []
 
+        # Explorer
+        assert settings.explorer_enabled is False
+        assert settings.explorer_url_prefix == "/apcore"
+
 
 # ===========================================================================
 # 2. None fallback to default
@@ -113,6 +117,8 @@ class TestNoneFallback:
             ("APCORE_LOGGING_FORMAT", "logging_format", "json"),
             ("APCORE_LOGGING_LEVEL", "logging_level", "INFO"),
             ("APCORE_EXTENSIONS", "extensions", []),
+            ("APCORE_EXPLORER_ENABLED", "explorer_enabled", False),
+            ("APCORE_EXPLORER_URL_PREFIX", "explorer_url_prefix", "/apcore"),
         ],
     )
     def test_none_falls_back_to_default(self, config_key: str, expected_attr: str, expected_default: object) -> None:
@@ -584,5 +590,50 @@ class TestCombinedSettings:
     def test_dataclass_fields_count(self) -> None:
         """Ensure ApcoreSettings has exactly the expected number of fields."""
         fields = dataclasses.fields(ApcoreSettings)
-        # 14 existing + 2 new MCP serve + 9 new observability + 1 extensions = 26
-        assert len(fields) == 26
+        # 26 existing + 2 explorer = 28
+        assert len(fields) == 28
+
+
+# ===========================================================================
+# 9. Explorer settings
+# ===========================================================================
+
+
+class TestExplorerEnabled:
+    def test_default_false(self) -> None:
+        s = _load()
+        assert s.explorer_enabled is False
+
+    def test_true(self) -> None:
+        s = _load(APCORE_EXPLORER_ENABLED=True)
+        assert s.explorer_enabled is True
+
+    def test_none_falls_back(self) -> None:
+        s = _load(APCORE_EXPLORER_ENABLED=None)
+        assert s.explorer_enabled is False
+
+    def test_non_bool_raises(self) -> None:
+        with pytest.raises(ValueError, match="APCORE_EXPLORER_ENABLED"):
+            _load(APCORE_EXPLORER_ENABLED="yes")
+
+
+class TestExplorerUrlPrefix:
+    def test_default(self) -> None:
+        s = _load()
+        assert s.explorer_url_prefix == "/apcore"
+
+    def test_custom(self) -> None:
+        s = _load(APCORE_EXPLORER_URL_PREFIX="/api-explorer")
+        assert s.explorer_url_prefix == "/api-explorer"
+
+    def test_none_falls_back(self) -> None:
+        s = _load(APCORE_EXPLORER_URL_PREFIX=None)
+        assert s.explorer_url_prefix == "/apcore"
+
+    def test_non_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="APCORE_EXPLORER_URL_PREFIX"):
+            _load(APCORE_EXPLORER_URL_PREFIX=123)
+
+    def test_empty_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="APCORE_EXPLORER_URL_PREFIX"):
+            _load(APCORE_EXPLORER_URL_PREFIX="")
