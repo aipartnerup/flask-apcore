@@ -33,7 +33,7 @@ apcore_cli = AppGroup("apcore", help="apcore AI-Perceivable Core commands.")
 @click.option(
     "--output",
     "-o",
-    type=click.Choice(["yaml"]),
+    type=click.Choice(["yaml", "json"]),
     default=None,
     help="Output format. Omit to register directly.",
 )
@@ -136,7 +136,7 @@ def scan_command(source, output, output_dir, dry_run, include, exclude):
             result = writer.write(modules, registry)
             click.echo(f"[flask-apcore] Registered {len(result)} modules.")
     else:
-        # YAML file mode
+        # File output mode (YAML / JSON)
         if dry_run:
             click.echo("[flask-apcore] Dry run -- no files written.")
             writer.write(modules, output_dir, dry_run=True)

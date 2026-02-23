@@ -269,3 +269,28 @@ class TestScanSourceSelection:
         result = runner.invoke(args=["apcore", "scan", "--source", "invalid"])
         # click.Choice rejects invalid values
         assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# --output json -> generates apcore-modules.json file
+# ---------------------------------------------------------------------------
+
+
+class TestScanJSONOutput:
+    """--output json generates apcore-modules.json file."""
+
+    def test_json_output_creates_file(self, scan_app, tmp_path):
+        out_dir = str(tmp_path / "json_out")
+        runner = scan_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "scan", "--output", "json", "--dir", out_dir])
+
+        assert result.exit_code == 0, result.output
+        assert "Generated" in result.output
+
+        from pathlib import Path
+        import json
+
+        json_file = Path(out_dir) / "apcore-modules.json"
+        assert json_file.exists()
+        data = json.loads(json_file.read_text())
+        assert len(data) >= 3
