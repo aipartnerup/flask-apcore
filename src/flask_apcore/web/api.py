@@ -50,7 +50,7 @@ def register_api_routes(bp: Blueprint) -> None:
         }
         return jsonify(result)
 
-    @bp.route("/modules/<path:module_id>/call", methods=["POST"])
+    @bp.route("/call/<path:module_id>", methods=["POST"])
     def call_module(module_id: str):
         settings = current_app.extensions["apcore"]["settings"]
         if not settings.explorer_allow_execute:

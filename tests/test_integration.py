@@ -546,7 +546,7 @@ class TestExplorerIntegration:
 
         # Call endpoint (disabled by default)
         resp = client.post(
-            f"/apcore/modules/{mid}/call",
+            f"/apcore/call/{mid}",
             json={},
             content_type="application/json",
         )

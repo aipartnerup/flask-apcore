@@ -157,7 +157,7 @@ class TestCallEndpoint:
         mid = next(m["module_id"] for m in listing if "list_items" in m["module_id"])
 
         resp = execute_client.post(
-            f"/apcore/modules/{mid}/call",
+            f"/apcore/call/{mid}",
             json={},
         )
         assert resp.status_code == 200
@@ -166,7 +166,7 @@ class TestCallEndpoint:
 
     def test_call_not_found_returns_404(self, execute_client):
         resp = execute_client.post(
-            "/apcore/modules/nonexistent.module/call",
+            "/apcore/call/nonexistent.module",
             json={},
         )
         assert resp.status_code == 404
@@ -177,7 +177,7 @@ class TestCallEndpoint:
         mid = listing[0]["module_id"]
 
         resp = client.post(
-            f"/apcore/modules/{mid}/call",
+            f"/apcore/call/{mid}",
             json={},
         )
         assert resp.status_code == 403
@@ -187,7 +187,7 @@ class TestCallEndpointDisabledExplorer:
     def test_call_404_when_explorer_disabled(self, disabled_app):
         """When explorer is disabled entirely, call endpoint doesn't exist."""
         c = disabled_app.test_client()
-        resp = c.post("/apcore/modules/foo/call", json={})
+        resp = c.post("/apcore/call/foo", json={})
         assert resp.status_code == 404
 
 

@@ -177,7 +177,7 @@ _EXPLORER_HTML = """\
     btn.textContent = 'Executing...';
     resultArea.innerHTML = '';
 
-    fetch(base + '/modules/' + moduleId + '/call', {
+    fetch(base + '/call/' + moduleId, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(inputs)
