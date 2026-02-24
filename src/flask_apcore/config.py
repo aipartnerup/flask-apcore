@@ -343,16 +343,12 @@ def load_settings(app: Flask) -> ApcoreSettings:
         raise ValueError("APCORE_EXPLORER_URL_PREFIX must be a non-empty string.")
 
     # --- explorer_allow_execute ---
-    explorer_allow_execute = app.config.get(
-        "APCORE_EXPLORER_ALLOW_EXECUTE", DEFAULT_EXPLORER_ALLOW_EXECUTE
-    )
+    explorer_allow_execute = app.config.get("APCORE_EXPLORER_ALLOW_EXECUTE", DEFAULT_EXPLORER_ALLOW_EXECUTE)
     if explorer_allow_execute is None:
         explorer_allow_execute = DEFAULT_EXPLORER_ALLOW_EXECUTE
     if not isinstance(explorer_allow_execute, bool):
         actual = type(explorer_allow_execute).__name__
-        raise ValueError(
-            f"APCORE_EXPLORER_ALLOW_EXECUTE must be a boolean. Got: {actual}"
-        )
+        raise ValueError(f"APCORE_EXPLORER_ALLOW_EXECUTE must be a boolean. Got: {actual}")
 
     return ApcoreSettings(
         module_dir=module_dir,

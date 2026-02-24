@@ -55,11 +55,7 @@ def module_to_dict(module: ScannedModule) -> dict[str, Any]:
         "tags": module.tags,
         "version": module.version,
         "target": module.target,
-        "annotations": (
-            dataclasses.asdict(module.annotations)
-            if module.annotations is not None
-            else None
-        ),
+        "annotations": (dataclasses.asdict(module.annotations) if module.annotations is not None else None),
         "metadata": module.metadata,
         "input_schema": module.input_schema,
         "output_schema": module.output_schema,

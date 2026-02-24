@@ -31,9 +31,7 @@ def _make_module(
         http_method=http_method,
         url_rule=url_rule,
         version="1.0.0",
-        annotations=(
-            ModuleAnnotations(readonly=True) if annotations is _UNSET else annotations
-        ),
+        annotations=(ModuleAnnotations(readonly=True) if annotations is _UNSET else annotations),
         documentation=documentation,
         metadata=metadata or {"source": "native"},
         warnings=[],

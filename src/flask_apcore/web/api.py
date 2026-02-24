@@ -19,7 +19,6 @@ def _make_serializable(obj: object) -> object:
 
 
 def register_api_routes(bp: Blueprint) -> None:
-
     @bp.route("/modules")
     def list_modules():
         registry = current_app.extensions["apcore"]["registry"]
@@ -65,8 +64,9 @@ def register_api_routes(bp: Blueprint) -> None:
     def call_module(module_id: str):
         settings = current_app.extensions["apcore"]["settings"]
         if not settings.explorer_allow_execute:
-            return jsonify({"error": "Module execution is disabled. "
-                           "Set APCORE_EXPLORER_ALLOW_EXECUTE=True to enable."}), 403
+            return jsonify(
+                {"error": "Module execution is disabled. " "Set APCORE_EXPLORER_ALLOW_EXECUTE=True to enable."}
+            ), 403
 
         from apcore.errors import ModuleNotFoundError as ApcoreNotFound
         from apcore.errors import SchemaValidationError

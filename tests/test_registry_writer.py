@@ -162,12 +162,14 @@ class TestRegistryWriter:
         """http_method and url_rule must be preserved in FunctionModule metadata."""
         writer = RegistryWriter()
         registry = Registry()
-        modules = [_make_module(
-            module_id="items.get",
-            http_method="GET",
-            url_rule="/items",
-            metadata={"source": "native"},
-        )]
+        modules = [
+            _make_module(
+                module_id="items.get",
+                http_method="GET",
+                url_rule="/items",
+                metadata={"source": "native"},
+            )
+        ]
 
         writer.write(modules, registry)
 
