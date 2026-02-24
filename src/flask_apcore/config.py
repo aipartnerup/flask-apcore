@@ -43,6 +43,7 @@ DEFAULT_LOGGING_LEVEL = "INFO"
 # Explorer defaults
 DEFAULT_EXPLORER_ENABLED = False
 DEFAULT_EXPLORER_URL_PREFIX = "/apcore"
+DEFAULT_EXPLORER_ALLOW_EXECUTE = False
 
 # ---------------------------------------------------------------------------
 # Valid choices
@@ -99,6 +100,7 @@ class ApcoreSettings:
     # Explorer
     explorer_enabled: bool
     explorer_url_prefix: str
+    explorer_allow_execute: bool
 
 
 def load_settings(app: Flask) -> ApcoreSettings:
@@ -340,6 +342,18 @@ def load_settings(app: Flask) -> ApcoreSettings:
     if not isinstance(explorer_url_prefix, str) or len(explorer_url_prefix) == 0:
         raise ValueError("APCORE_EXPLORER_URL_PREFIX must be a non-empty string.")
 
+    # --- explorer_allow_execute ---
+    explorer_allow_execute = app.config.get(
+        "APCORE_EXPLORER_ALLOW_EXECUTE", DEFAULT_EXPLORER_ALLOW_EXECUTE
+    )
+    if explorer_allow_execute is None:
+        explorer_allow_execute = DEFAULT_EXPLORER_ALLOW_EXECUTE
+    if not isinstance(explorer_allow_execute, bool):
+        actual = type(explorer_allow_execute).__name__
+        raise ValueError(
+            f"APCORE_EXPLORER_ALLOW_EXECUTE must be a boolean. Got: {actual}"
+        )
+
     return ApcoreSettings(
         module_dir=module_dir,
         auto_discover=auto_discover,
@@ -369,4 +383,5 @@ def load_settings(app: Flask) -> ApcoreSettings:
         extensions=extensions,
         explorer_enabled=explorer_enabled,
         explorer_url_prefix=explorer_url_prefix,
+        explorer_allow_execute=explorer_allow_execute,
     )

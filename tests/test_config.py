@@ -85,6 +85,7 @@ class TestAllDefaults:
         # Explorer
         assert settings.explorer_enabled is False
         assert settings.explorer_url_prefix == "/apcore"
+        assert settings.explorer_allow_execute is False
 
 
 # ===========================================================================
@@ -590,8 +591,8 @@ class TestCombinedSettings:
     def test_dataclass_fields_count(self) -> None:
         """Ensure ApcoreSettings has exactly the expected number of fields."""
         fields = dataclasses.fields(ApcoreSettings)
-        # 26 existing + 2 explorer = 28
-        assert len(fields) == 28
+        # 26 existing + 3 explorer = 29
+        assert len(fields) == 29
 
 
 # ===========================================================================
@@ -637,3 +638,21 @@ class TestExplorerUrlPrefix:
     def test_empty_string_raises(self) -> None:
         with pytest.raises(ValueError, match="APCORE_EXPLORER_URL_PREFIX"):
             _load(APCORE_EXPLORER_URL_PREFIX="")
+
+
+class TestExplorerAllowExecute:
+    def test_default_false(self) -> None:
+        s = _load()
+        assert s.explorer_allow_execute is False
+
+    def test_true(self) -> None:
+        s = _load(APCORE_EXPLORER_ALLOW_EXECUTE=True)
+        assert s.explorer_allow_execute is True
+
+    def test_none_falls_back(self) -> None:
+        s = _load(APCORE_EXPLORER_ALLOW_EXECUTE=None)
+        assert s.explorer_allow_execute is False
+
+    def test_non_bool_raises(self) -> None:
+        with pytest.raises(ValueError, match="APCORE_EXPLORER_ALLOW_EXECUTE"):
+            _load(APCORE_EXPLORER_ALLOW_EXECUTE="yes")
