@@ -50,6 +50,21 @@ def greet(name: str) -> dict:
     return {"message": f"Hello, {name}!"}
 ```
 
+Or use the **factory pattern**:
+
+```python
+from flask import Flask
+from flask_apcore import Apcore
+
+apcore = Apcore()
+
+def create_app():
+    app = Flask(__name__)
+    # ... register routes / blueprints ...
+    apcore.init_app(app)
+    return app
+```
+
 ### 2. Scan routes and start MCP server
 
 ```bash
@@ -184,22 +199,36 @@ app.config.update(
     # Core
     APCORE_AUTO_DISCOVER=True,          # Auto-load bindings and @module packages
     APCORE_MODULE_DIR="apcore_modules/",# Directory for binding files
+    APCORE_BINDING_PATTERN="*.binding.yaml",  # Glob pattern for binding files
     APCORE_MODULE_PACKAGES=[],          # Python packages to scan for @module functions
     APCORE_SCANNER_SOURCE="auto",       # Scanner: auto, native, smorest, restx
+
+    # Middleware & Execution
+    APCORE_MIDDLEWARES=[],              # Middleware dotted paths (e.g. ["myapp.mw.AuthMW"])
+    APCORE_ACL_PATH=None,              # ACL file path (e.g. "acl.yaml")
+    APCORE_CONTEXT_FACTORY=None,       # Custom ContextFactory dotted path
+    APCORE_EXECUTOR_CONFIG=None,       # Executor config dict (passed to apcore.Config)
+    APCORE_EXTENSIONS=[],              # Extension plugin dotted paths
 
     # MCP Server
     APCORE_SERVE_TRANSPORT="stdio",     # Transport: stdio, streamable-http, sse
     APCORE_SERVE_HOST="127.0.0.1",      # HTTP host
     APCORE_SERVE_PORT=9100,             # HTTP port
     APCORE_SERVER_NAME="apcore-mcp",    # MCP server name
+    APCORE_SERVER_VERSION=None,         # MCP server version string
     APCORE_SERVE_VALIDATE_INPUTS=False, # Validate inputs against schemas
+    APCORE_SERVE_LOG_LEVEL=None,        # Log level: DEBUG, INFO, WARNING, ERROR
 
     # Observability
     APCORE_TRACING_ENABLED=False,       # Enable distributed tracing
     APCORE_TRACING_EXPORTER="stdout",   # Exporter: stdout, memory, otlp
+    APCORE_TRACING_OTLP_ENDPOINT=None,  # OTLP collector URL (e.g. "http://localhost:4317")
+    APCORE_TRACING_SERVICE_NAME="flask-apcore",  # Service name for traces
     APCORE_METRICS_ENABLED=False,       # Enable metrics collection
+    APCORE_METRICS_BUCKETS=None,        # Custom histogram buckets (list of floats)
     APCORE_LOGGING_ENABLED=False,       # Enable structured logging
     APCORE_LOGGING_FORMAT="json",       # Format: json, text
+    APCORE_LOGGING_LEVEL="INFO",        # Level: trace, debug, info, warn, error, fatal
 
     # Explorer (dev/staging only — no built-in auth)
     APCORE_EXPLORER_ENABLED=False,      # Enable schema explorer Blueprint
@@ -247,6 +276,7 @@ Browse to:
 - `http://127.0.0.1:5000/apcore/` -- Interactive explorer with Try-it
 - `http://127.0.0.1:5000/apcore/modules` -- Module list (JSON)
 - `http://127.0.0.1:5000/apcore/modules/<id>` -- Module detail (JSON)
+- `POST http://127.0.0.1:5000/apcore/call/<id>` -- Execute a module (requires `APCORE_EXPLORER_ALLOW_EXECUTE=True`)
 
 The Try-it feature generates an input form from each module's schema, executes via the apcore Executor (with full middleware, ACL, and observability), and displays the result inline.
 
