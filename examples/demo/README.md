@@ -54,7 +54,8 @@ Enable the built-in schema explorer by adding config to `app.py`:
 ```python
 app.config.update(
     APCORE_EXPLORER_ENABLED=True,
-    APCORE_EXPLORER_URL_PREFIX="/apcore",  # default
+    APCORE_EXPLORER_URL_PREFIX="/apcore",       # default
+    APCORE_EXPLORER_ALLOW_EXECUTE=True,         # enable Try-it execution
 )
 ```
 

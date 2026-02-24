@@ -13,6 +13,7 @@ Flask Extension for [apcore](https://github.com/aipartnerup/apcore-python) (AI-P
 - **Observability** -- distributed tracing, metrics, and structured JSON logging
 - **Input validation** -- validate tool inputs against Pydantic schemas before execution
 - **CLI-first workflow** -- `flask apcore scan` + `flask apcore serve` for zero-intrusion integration
+- **Schema explorer** -- built-in browser UI for inspecting modules with Try-it execution
 
 ## Requirements
 
@@ -199,6 +200,11 @@ app.config.update(
     APCORE_METRICS_ENABLED=False,       # Enable metrics collection
     APCORE_LOGGING_ENABLED=False,       # Enable structured logging
     APCORE_LOGGING_FORMAT="json",       # Format: json, text
+
+    # Explorer
+    APCORE_EXPLORER_ENABLED=False,      # Enable schema explorer Blueprint
+    APCORE_EXPLORER_URL_PREFIX="/apcore",# URL prefix for explorer routes
+    APCORE_EXPLORER_ALLOW_EXECUTE=False, # Allow Try-it module execution
 )
 ```
 
@@ -218,6 +224,29 @@ app.config.update(
 ```
 
 These are wired into the apcore Executor as middleware, providing tracing spans, latency metrics, and structured log entries for every module execution.
+
+## Schema Explorer
+
+Enable the built-in browser UI to inspect registered modules and execute them interactively:
+
+```python
+app.config.update(
+    APCORE_EXPLORER_ENABLED=True,
+    APCORE_EXPLORER_ALLOW_EXECUTE=True,  # optional: enable Try-it execution
+)
+```
+
+```bash
+flask run --port 5000
+```
+
+Browse to:
+
+- `http://127.0.0.1:5000/apcore/` -- Interactive explorer with Try-it
+- `http://127.0.0.1:5000/apcore/modules` -- Module list (JSON)
+- `http://127.0.0.1:5000/apcore/modules/<id>` -- Module detail (JSON)
+
+The Try-it feature generates an input form from each module's schema, executes via the apcore Executor (with full middleware, ACL, and observability), and displays the result inline.
 
 ## Docker Demo
 
