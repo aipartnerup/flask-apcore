@@ -543,3 +543,11 @@ class TestExplorerIntegration:
         resp = client.get("/apcore/")
         assert resp.status_code == 200
         assert b"apcore Explorer" in resp.data
+
+        # Call endpoint (disabled by default)
+        resp = client.post(
+            f"/apcore/modules/{mid}/call",
+            json={},
+            content_type="application/json",
+        )
+        assert resp.status_code == 403
