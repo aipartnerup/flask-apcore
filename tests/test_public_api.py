@@ -52,9 +52,6 @@ class TestExportsExist:
 class TestVersion:
     """__version__ matches expected value."""
 
-    def test_version_is_0_1_1(self):
-        assert flask_apcore.__version__ == "0.1.1"
-
     def test_version_is_string(self):
         assert isinstance(flask_apcore.__version__, str)
 

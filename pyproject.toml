@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "flask-apcore"
-version = "0.1.1"
+version = "0.2.0"
 description = "Flask Extension for apcore AI-Perceivable Core integration, exposes Flask routes as MCP tools with auto-discovery, schema inference, YAML binding, and built-in observability. Supports MCP server (stdio/HTTP) for LLM tool integration."
 requires-python = ">=3.11"
 license = "MIT"

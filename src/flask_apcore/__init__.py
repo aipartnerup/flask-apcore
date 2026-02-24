@@ -1,6 +1,6 @@
 """flask-apcore: Flask Extension for apcore AI-Perceivable Core integration."""
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 from flask_apcore.extension import Apcore
 
