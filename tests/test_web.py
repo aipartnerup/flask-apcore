@@ -118,6 +118,79 @@ class TestExplorerHTML:
         assert b"fetch" in resp.data
 
 
+@pytest.fixture()
+def execute_app(tmp_path):
+    """Flask app with explorer + execute enabled."""
+    app = Flask(__name__)
+    app.config["TESTING"] = True
+    app.config["APCORE_MODULE_DIR"] = str(tmp_path / "modules")
+    app.config["APCORE_AUTO_DISCOVER"] = False
+    app.config["APCORE_EXPLORER_ENABLED"] = True
+    app.config["APCORE_EXPLORER_ALLOW_EXECUTE"] = True
+
+    app.add_url_rule("/items", "list_items", list_items, methods=["GET"])
+    app.add_url_rule("/items", "create_item", create_item, methods=["POST"])
+
+    Apcore(app)
+
+    with app.app_context():
+        from flask_apcore.scanners import auto_detect_scanner
+        from flask_apcore.output.registry_writer import RegistryWriter
+
+        scanner = auto_detect_scanner(app)
+        modules = scanner.scan(app, exclude=r"^apcore_explorer\.")
+        writer = RegistryWriter()
+        writer.write(modules, app.extensions["apcore"]["registry"])
+
+    return app
+
+
+@pytest.fixture()
+def execute_client(execute_app):
+    return execute_app.test_client()
+
+
+class TestCallEndpoint:
+    def test_call_returns_output(self, execute_client):
+        listing = execute_client.get("/apcore/modules").get_json()
+        # Find list_items module (GET, no required inputs)
+        mid = next(m["module_id"] for m in listing if "list_items" in m["module_id"])
+
+        resp = execute_client.post(
+            f"/apcore/modules/{mid}/call",
+            json={},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert "output" in data
+
+    def test_call_not_found_returns_404(self, execute_client):
+        resp = execute_client.post(
+            "/apcore/modules/nonexistent.module/call",
+            json={},
+        )
+        assert resp.status_code == 404
+
+    def test_call_disabled_returns_403(self, client):
+        """When APCORE_EXPLORER_ALLOW_EXECUTE is False (default), returns 403."""
+        listing = client.get("/apcore/modules").get_json()
+        mid = listing[0]["module_id"]
+
+        resp = client.post(
+            f"/apcore/modules/{mid}/call",
+            json={},
+        )
+        assert resp.status_code == 403
+
+
+class TestCallEndpointDisabledExplorer:
+    def test_call_404_when_explorer_disabled(self, disabled_app):
+        """When explorer is disabled entirely, call endpoint doesn't exist."""
+        c = disabled_app.test_client()
+        resp = c.post("/apcore/modules/foo/call", json={})
+        assert resp.status_code == 404
+
+
 class TestCustomUrlPrefix:
     def test_custom_prefix(self, tmp_path):
         app = Flask(__name__)

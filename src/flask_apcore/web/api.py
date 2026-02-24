@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from flask import Blueprint, current_app, jsonify
+from flask import Blueprint, current_app, jsonify, request
 
 from flask_apcore.serializers import annotations_to_dict
 
@@ -49,3 +49,31 @@ def register_api_routes(bp: Blueprint) -> None:
             "output_schema": descriptor.output_schema,
         }
         return jsonify(result)
+
+    @bp.route("/modules/<path:module_id>/call", methods=["POST"])
+    def call_module(module_id: str):
+        settings = current_app.extensions["apcore"]["settings"]
+        if not settings.explorer_allow_execute:
+            return jsonify({"error": "Module execution is disabled. "
+                           "Set APCORE_EXPLORER_ALLOW_EXECUTE=True to enable."}), 403
+
+        from apcore.errors import ModuleNotFoundError as ApcoreNotFound
+        from apcore.errors import SchemaValidationError
+
+        from flask_apcore.registry import get_context_factory, get_executor
+
+        inputs = request.get_json(silent=True) or {}
+
+        executor = get_executor()
+        context = get_context_factory().create_context(request)
+
+        try:
+            output = executor.call(module_id, inputs, context)
+        except ApcoreNotFound:
+            return jsonify({"error": f"Module '{module_id}' not found"}), 404
+        except SchemaValidationError as e:
+            return jsonify({"error": f"Input validation failed: {e}"}), 400
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+        return jsonify({"output": output})
