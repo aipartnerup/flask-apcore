@@ -51,11 +51,14 @@ Connect from any MCP client (e.g., Claude Desktop) using `http://127.0.0.1:9100`
 
 Enable the built-in schema explorer by adding config to `app.py`:
 
+> **Security:** The Explorer exposes module schemas and execution via unauthenticated HTTP.
+> Only enable in **development/staging**. Do NOT enable in production without adding your own auth layer.
+
 ```python
 app.config.update(
-    APCORE_EXPLORER_ENABLED=True,
-    APCORE_EXPLORER_URL_PREFIX="/apcore",       # default
-    APCORE_EXPLORER_ALLOW_EXECUTE=True,         # enable Try-it execution
+    APCORE_EXPLORER_ENABLED=True,               # browse modules at /apcore/
+    APCORE_EXPLORER_URL_PREFIX="/apcore",        # default
+    APCORE_EXPLORER_ALLOW_EXECUTE=True,          # allow Try-it (calls Executor)
 )
 ```
 

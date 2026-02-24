@@ -68,8 +68,10 @@ app.config.update(
     APCORE_LOGGING_ENABLED=True,
     APCORE_LOGGING_FORMAT="json",
     APCORE_SERVE_VALIDATE_INPUTS=True,
-    APCORE_EXPLORER_ENABLED=True,
-    APCORE_EXPLORER_ALLOW_EXECUTE=True,
+    # Explorer: dev/staging only. Exposes module schemas and execution via HTTP.
+    # Do NOT enable in production — there is no auth on these endpoints.
+    APCORE_EXPLORER_ENABLED=True,            # browse modules at /apcore/
+    APCORE_EXPLORER_ALLOW_EXECUTE=True,      # allow Try-it execution (calls Executor)
 )
 
 

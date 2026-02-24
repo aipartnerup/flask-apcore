@@ -201,10 +201,10 @@ app.config.update(
     APCORE_LOGGING_ENABLED=False,       # Enable structured logging
     APCORE_LOGGING_FORMAT="json",       # Format: json, text
 
-    # Explorer
+    # Explorer (dev/staging only — no built-in auth)
     APCORE_EXPLORER_ENABLED=False,      # Enable schema explorer Blueprint
     APCORE_EXPLORER_URL_PREFIX="/apcore",# URL prefix for explorer routes
-    APCORE_EXPLORER_ALLOW_EXECUTE=False, # Allow Try-it module execution
+    APCORE_EXPLORER_ALLOW_EXECUTE=False, # Allow Try-it execution (calls Executor)
 )
 ```
 
@@ -227,12 +227,14 @@ These are wired into the apcore Executor as middleware, providing tracing spans,
 
 ## Schema Explorer
 
-Enable the built-in browser UI to inspect registered modules and execute them interactively:
+Enable the built-in browser UI to inspect registered modules and execute them interactively.
+
+> **Security:** Explorer endpoints are unauthenticated. Only enable in development/staging. Do NOT enable in production without adding your own auth layer.
 
 ```python
 app.config.update(
-    APCORE_EXPLORER_ENABLED=True,
-    APCORE_EXPLORER_ALLOW_EXECUTE=True,  # optional: enable Try-it execution
+    APCORE_EXPLORER_ENABLED=True,           # dev/staging only
+    APCORE_EXPLORER_ALLOW_EXECUTE=True,     # optional: enable Try-it execution
 )
 ```
 
