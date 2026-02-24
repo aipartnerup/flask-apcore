@@ -33,7 +33,7 @@ apcore_cli = AppGroup("apcore", help="apcore AI-Perceivable Core commands.")
 @click.option(
     "--output",
     "-o",
-    type=click.Choice(["yaml", "json", "openapi"]),
+    type=click.Choice(["yaml"]),
     default=None,
     help="Output format. Omit to register directly.",
 )

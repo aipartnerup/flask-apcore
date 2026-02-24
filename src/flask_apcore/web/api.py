@@ -2,21 +2,9 @@
 
 from __future__ import annotations
 
-import dataclasses
-from typing import Any
-
 from flask import Blueprint, current_app, jsonify
 
-
-def _annotations_to_dict(annotations: Any) -> dict[str, Any] | None:
-    """Convert annotations to a dict, handling both dataclass and dict forms."""
-    if annotations is None:
-        return None
-    if isinstance(annotations, dict):
-        return annotations
-    if dataclasses.is_dataclass(annotations) and not isinstance(annotations, type):
-        return dataclasses.asdict(annotations)
-    return None
+from flask_apcore.serializers import annotations_to_dict
 
 
 def register_api_routes(bp: Blueprint) -> None:
@@ -45,7 +33,7 @@ def register_api_routes(bp: Blueprint) -> None:
         if descriptor is None:
             return jsonify({"error": f"Module '{module_id}' not found"}), 404
 
-        annotations_dict = _annotations_to_dict(descriptor.annotations)
+        annotations_dict = annotations_to_dict(descriptor.annotations)
 
         result = {
             "module_id": descriptor.module_id,
@@ -61,17 +49,3 @@ def register_api_routes(bp: Blueprint) -> None:
             "output_schema": descriptor.output_schema,
         }
         return jsonify(result)
-
-    @bp.route("/openapi.json")
-    def openapi_spec():
-        registry = current_app.extensions["apcore"]["registry"]
-        settings = current_app.extensions["apcore"]["settings"]
-
-        from flask_apcore.web._openapi import registry_to_openapi
-
-        spec = registry_to_openapi(
-            registry,
-            title=settings.server_name,
-            version=getattr(settings, "server_version", None) or "1.0.0",
-        )
-        return jsonify(spec)

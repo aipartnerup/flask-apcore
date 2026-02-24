@@ -539,12 +539,6 @@ class TestExplorerIntegration:
         detail = resp.get_json()
         assert "input_schema" in detail
 
-        # OpenAPI spec
-        resp = client.get("/apcore/openapi.json")
-        assert resp.status_code == 200
-        spec = resp.get_json()
-        assert spec["openapi"] == "3.1.0"
-
         # HTML page
         resp = client.get("/apcore/")
         assert resp.status_code == 200

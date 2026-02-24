@@ -106,16 +106,6 @@ class TestModuleDetailAPI:
         assert resp.status_code == 404
 
 
-class TestOpenAPIEndpoint:
-    def test_returns_openapi_spec(self, client):
-        resp = client.get("/apcore/openapi.json")
-        assert resp.status_code == 200
-        spec = resp.get_json()
-        assert spec["openapi"] == "3.1.0"
-        assert "paths" in spec
-        assert len(spec["paths"]) >= 1
-
-
 class TestExplorerHTML:
     def test_returns_html(self, client):
         resp = client.get("/apcore/")
