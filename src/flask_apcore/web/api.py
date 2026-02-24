@@ -7,6 +7,17 @@ from flask import Blueprint, current_app, jsonify, request
 from flask_apcore.serializers import annotations_to_dict
 
 
+def _make_serializable(obj: object) -> object:
+    """Recursively convert non-JSON-serializable objects (e.g. Pydantic models)."""
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    if isinstance(obj, list):
+        return [_make_serializable(item) for item in obj]
+    if isinstance(obj, dict):
+        return {k: _make_serializable(v) for k, v in obj.items()}
+    return obj
+
+
 def register_api_routes(bp: Blueprint) -> None:
 
     @bp.route("/modules")
@@ -76,4 +87,4 @@ def register_api_routes(bp: Blueprint) -> None:
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-        return jsonify({"output": output})
+        return jsonify({"output": _make_serializable(output)})
