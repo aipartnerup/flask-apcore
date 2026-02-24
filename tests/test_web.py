@@ -191,6 +191,20 @@ class TestCallEndpointDisabledExplorer:
         assert resp.status_code == 404
 
 
+class TestExplorerHTMLTryIt:
+    def test_html_contains_try_it_elements(self, client):
+        resp = client.get("/apcore/")
+        html = resp.data.decode()
+        assert "Try it" in html
+        assert "execute-btn" in html or "Execute" in html
+        assert "input-editor" in html or "textarea" in html
+
+    def test_html_contains_result_area(self, client):
+        resp = client.get("/apcore/")
+        html = resp.data.decode()
+        assert "result" in html.lower()
+
+
 class TestCustomUrlPrefix:
     def test_custom_prefix(self, tmp_path):
         app = Flask(__name__)
