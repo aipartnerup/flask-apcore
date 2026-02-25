@@ -49,30 +49,29 @@ Connect from any MCP client (e.g., Claude Desktop) using `http://127.0.0.1:9100`
 
 ### 4. Explorer (optional)
 
-Enable the built-in schema explorer by adding config to `app.py`:
+Start the MCP server with the built-in Tool Explorer UI:
 
 > **Security:** The Explorer exposes module schemas and execution via unauthenticated HTTP.
 > Only enable in **development/staging**. Do NOT enable in production without adding your own auth layer.
 
-```python
-app.config.update(
-    APCORE_EXPLORER_ENABLED=True,               # browse modules at /apcore/
-    APCORE_EXPLORER_URL_PREFIX="/apcore",        # default
-    APCORE_EXPLORER_ALLOW_EXECUTE=True,          # allow Try-it (calls Executor)
-)
-```
-
-Then start the Flask dev server:
-
 ```bash
-flask run --port 5000
+flask apcore serve --http --host 127.0.0.1 --port 9100 --explorer --allow-execute
 ```
 
-Browse to:
+Browse to `http://127.0.0.1:9100/explorer/` for the interactive module explorer with Try-it execution.
 
-- `http://127.0.0.1:5000/apcore/` — Interactive HTML explorer with Try-it
-- `http://127.0.0.1:5000/apcore/modules` — Module list (JSON)
-- `http://127.0.0.1:5000/apcore/modules/<module_id>` — Module detail (JSON)
+#### Example payloads for Try-it
+
+The demo ships with 2 seed tasks (id 1 and 2). Use these example inputs in the explorer:
+
+| Module | Example input |
+|---|---|
+| `task_stats.v1` | *(no input required)* |
+| `list_tasks.get` | *(no input required)* |
+| `get_task.get` | `{"task_id": 1}` |
+| `create_task.post` | `{"title": "Buy milk", "description": "From the store", "done": false}` |
+| `update_task.put` | `{"task_id": 1, "title": "Try flask-apcore (done!)", "done": true}` |
+| `delete_task.delete` | `{"task_id": 2}` |
 
 ## Docker
 
@@ -94,7 +93,7 @@ docker compose down
 - **Annotation inference** — GET→readonly, DELETE→destructive, PUT→idempotent
 - **Pydantic schemas** — Input validation from `TaskCreate` and `TaskUpdate` models
 - **@module decorator** — `task_stats.v1` registered alongside scanned routes
-- **Schema explorer** — Browser-based module viewer with Try-it execution
+- **MCP Tool Explorer** — Browser-based module viewer via `flask apcore serve --explorer`
 - **MCP server** — HTTP transport on port 9100
 - **Observability** — Tracing (stdout), metrics, and structured JSON logging
 - **Input validation** — `--validate-inputs` checks tool inputs against schemas

@@ -6,7 +6,11 @@ from __future__ import annotations
 import pytest
 from apcore import ModuleAnnotations, Registry
 
-from flask_apcore.output.registry_writer import RegistryWriter, _resolve_target
+from flask_apcore.output.registry_writer import (
+    RegistryWriter,
+    _flatten_pydantic_params,
+    _resolve_target,
+)
 from flask_apcore.scanners.base import ScannedModule
 
 
@@ -185,3 +189,72 @@ class TestRegistryWriter:
         registered = writer.write([], registry)
 
         assert registered == []
+
+
+# ---------------------------------------------------------------------------
+# _flatten_pydantic_params
+# ---------------------------------------------------------------------------
+
+
+class TestFlattenPydanticParams:
+    """Test that Pydantic model params are flattened to scalar kwargs."""
+
+    def test_no_pydantic_returns_original(self):
+        func = _resolve_target("tests._test_target_module:sample_handler")
+        wrapped = _flatten_pydantic_params(func)
+        assert wrapped is func
+
+    def test_pydantic_body_flattened(self):
+        func = _resolve_target("tests._test_target_module:create_item")
+        wrapped = _flatten_pydantic_params(func)
+        assert wrapped is not func
+
+        result = wrapped(title="Buy milk", description="From store", done=False)
+        assert result.id == 1
+        assert result.title == "Buy milk"
+        assert result.description == "From store"
+
+    def test_mixed_params_flattened(self):
+        func = _resolve_target("tests._test_target_module:update_item")
+        wrapped = _flatten_pydantic_params(func)
+
+        result = wrapped(item_id=42, title="Updated", description="New desc", done=True)
+        assert result.id == 42
+        assert result.title == "Updated"
+        assert result.done is True
+
+    def test_pydantic_defaults_honoured(self):
+        func = _resolve_target("tests._test_target_module:create_item")
+        wrapped = _flatten_pydantic_params(func)
+
+        # Only required field; description and done have defaults
+        result = wrapped(title="Minimal")
+        assert result.title == "Minimal"
+        assert result.description == ""
+        assert result.done is False
+
+    def test_wrapper_preserves_name_and_doc(self):
+        func = _resolve_target("tests._test_target_module:create_item")
+        wrapped = _flatten_pydantic_params(func)
+        assert wrapped.__name__ == "create_item"
+        assert "Create a new item" in (wrapped.__doc__ or "")
+
+    def test_registered_module_accepts_flat_inputs(self):
+        """End-to-end: scan target with Pydantic body -> register -> execute with flat inputs."""
+        writer = RegistryWriter()
+        registry = Registry()
+        mod = _make_module(
+            module_id="create_item.post",
+            target="tests._test_target_module:create_item",
+            http_method="POST",
+            url_rule="/items",
+        )
+
+        writer.write([mod], registry)
+
+        fm = registry.get("create_item.post")
+        from apcore import Context
+
+        result = fm.execute({"title": "Test", "description": "Desc", "done": True}, Context.create())
+        assert result["id"] == 1
+        assert result["title"] == "Test"

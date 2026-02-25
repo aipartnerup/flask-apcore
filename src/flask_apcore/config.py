@@ -40,10 +40,10 @@ DEFAULT_LOGGING_ENABLED = False
 DEFAULT_LOGGING_FORMAT = "json"
 DEFAULT_LOGGING_LEVEL = "INFO"
 
-# Explorer defaults
-DEFAULT_EXPLORER_ENABLED = False
-DEFAULT_EXPLORER_URL_PREFIX = "/apcore"
-DEFAULT_EXPLORER_ALLOW_EXECUTE = False
+# MCP Serve Explorer defaults (apcore-mcp Tool Explorer)
+DEFAULT_SERVE_EXPLORER = False
+DEFAULT_SERVE_EXPLORER_PREFIX = "/explorer"
+DEFAULT_SERVE_ALLOW_EXECUTE = False
 
 # ---------------------------------------------------------------------------
 # Valid choices
@@ -97,10 +97,10 @@ class ApcoreSettings:
     # New Extensions
     extensions: list[str]
 
-    # Explorer
-    explorer_enabled: bool
-    explorer_url_prefix: str
-    explorer_allow_execute: bool
+    # MCP Serve Explorer (apcore-mcp Tool Explorer)
+    serve_explorer: bool
+    serve_explorer_prefix: str
+    serve_allow_execute: bool
 
 
 def load_settings(app: Flask) -> ApcoreSettings:
@@ -325,30 +325,30 @@ def load_settings(app: Flask) -> ApcoreSettings:
     if not isinstance(extensions, list) or not all(isinstance(e, str) for e in extensions):
         raise ValueError("APCORE_EXTENSIONS must be a list of dotted path strings.")
 
-    # === Explorer settings ===
+    # === MCP Serve Explorer settings ===
 
-    # --- explorer_enabled ---
-    explorer_enabled = app.config.get("APCORE_EXPLORER_ENABLED", DEFAULT_EXPLORER_ENABLED)
-    if explorer_enabled is None:
-        explorer_enabled = DEFAULT_EXPLORER_ENABLED
-    if not isinstance(explorer_enabled, bool):
-        actual = type(explorer_enabled).__name__
-        raise ValueError(f"APCORE_EXPLORER_ENABLED must be a boolean. Got: {actual}")
+    # --- serve_explorer ---
+    serve_explorer = app.config.get("APCORE_SERVE_EXPLORER", DEFAULT_SERVE_EXPLORER)
+    if serve_explorer is None:
+        serve_explorer = DEFAULT_SERVE_EXPLORER
+    if not isinstance(serve_explorer, bool):
+        actual = type(serve_explorer).__name__
+        raise ValueError(f"APCORE_SERVE_EXPLORER must be a boolean. Got: {actual}")
 
-    # --- explorer_url_prefix ---
-    explorer_url_prefix = app.config.get("APCORE_EXPLORER_URL_PREFIX", DEFAULT_EXPLORER_URL_PREFIX)
-    if explorer_url_prefix is None:
-        explorer_url_prefix = DEFAULT_EXPLORER_URL_PREFIX
-    if not isinstance(explorer_url_prefix, str) or len(explorer_url_prefix) == 0:
-        raise ValueError("APCORE_EXPLORER_URL_PREFIX must be a non-empty string.")
+    # --- serve_explorer_prefix ---
+    serve_explorer_prefix = app.config.get("APCORE_SERVE_EXPLORER_PREFIX", DEFAULT_SERVE_EXPLORER_PREFIX)
+    if serve_explorer_prefix is None:
+        serve_explorer_prefix = DEFAULT_SERVE_EXPLORER_PREFIX
+    if not isinstance(serve_explorer_prefix, str) or len(serve_explorer_prefix) == 0:
+        raise ValueError("APCORE_SERVE_EXPLORER_PREFIX must be a non-empty string.")
 
-    # --- explorer_allow_execute ---
-    explorer_allow_execute = app.config.get("APCORE_EXPLORER_ALLOW_EXECUTE", DEFAULT_EXPLORER_ALLOW_EXECUTE)
-    if explorer_allow_execute is None:
-        explorer_allow_execute = DEFAULT_EXPLORER_ALLOW_EXECUTE
-    if not isinstance(explorer_allow_execute, bool):
-        actual = type(explorer_allow_execute).__name__
-        raise ValueError(f"APCORE_EXPLORER_ALLOW_EXECUTE must be a boolean. Got: {actual}")
+    # --- serve_allow_execute ---
+    serve_allow_execute = app.config.get("APCORE_SERVE_ALLOW_EXECUTE", DEFAULT_SERVE_ALLOW_EXECUTE)
+    if serve_allow_execute is None:
+        serve_allow_execute = DEFAULT_SERVE_ALLOW_EXECUTE
+    if not isinstance(serve_allow_execute, bool):
+        actual = type(serve_allow_execute).__name__
+        raise ValueError(f"APCORE_SERVE_ALLOW_EXECUTE must be a boolean. Got: {actual}")
 
     return ApcoreSettings(
         module_dir=module_dir,
@@ -377,7 +377,7 @@ def load_settings(app: Flask) -> ApcoreSettings:
         logging_format=logging_format,
         logging_level=logging_level,
         extensions=extensions,
-        explorer_enabled=explorer_enabled,
-        explorer_url_prefix=explorer_url_prefix,
-        explorer_allow_execute=explorer_allow_execute,
+        serve_explorer=serve_explorer,
+        serve_explorer_prefix=serve_explorer_prefix,
+        serve_allow_execute=serve_allow_execute,
     )

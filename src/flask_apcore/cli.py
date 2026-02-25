@@ -191,6 +191,24 @@ def scan_command(source, output, output_dir, dry_run, include, exclude):
     default=None,
     help="Set the log level for the apcore-mcp logger.",
 )
+@click.option(
+    "--explorer",
+    is_flag=True,
+    default=False,
+    help="Enable the MCP Tool Explorer UI (HTTP transports only).",
+)
+@click.option(
+    "--explorer-prefix",
+    type=str,
+    default=None,
+    help="URL prefix for the MCP Tool Explorer. Default: /explorer.",
+)
+@click.option(
+    "--allow-execute",
+    is_flag=True,
+    default=False,
+    help="Allow tool execution from the MCP Tool Explorer UI.",
+)
 @with_appcontext
 def serve_command(
     transport: str,
@@ -199,6 +217,9 @@ def serve_command(
     name: str | None,
     validate_inputs: bool,
     log_level: str | None,
+    explorer: bool,
+    explorer_prefix: str | None,
+    allow_execute: bool,
 ) -> None:
     """Start an MCP server exposing registered apcore modules as tools."""
     app = current_app._get_current_object()
@@ -212,11 +233,17 @@ def serve_command(
     port = port if port is not None else settings.serve_port
     name = name or settings.server_name
 
-    # Use config fallbacks for validate_inputs and log_level
+    # Use config fallbacks for validate_inputs, log_level, and explorer
     if not validate_inputs:
         validate_inputs = settings.serve_validate_inputs
     if log_level is None:
         log_level = settings.serve_log_level
+    if not explorer:
+        explorer = settings.serve_explorer
+    if explorer_prefix is None:
+        explorer_prefix = settings.serve_explorer_prefix
+    if not allow_execute:
+        allow_execute = settings.serve_allow_execute
 
     # Check module count
     if registry.count == 0:
@@ -259,6 +286,9 @@ def serve_command(
         validate_inputs=validate_inputs,
         log_level=log_level,
         metrics_collector=metrics_collector,
+        explorer=explorer,
+        explorer_prefix=explorer_prefix,
+        allow_execute=allow_execute,
     )
 
 
@@ -272,6 +302,9 @@ def _do_serve(
     validate_inputs: bool = False,
     log_level: str | None = None,
     metrics_collector: Any | None = None,
+    explorer: bool = False,
+    explorer_prefix: str = "/explorer",
+    allow_execute: bool = False,
 ) -> None:
     """Delegate to apcore_mcp.serve().
 
@@ -287,8 +320,7 @@ def _do_serve(
             "apcore-mcp is required for 'flask apcore serve'. " "Install with: pip install flask-apcore[mcp]"
         )
 
-    serve(
-        registry_or_executor,
+    kwargs: dict[str, Any] = dict(
         transport=transport,
         host=host,
         port=port,
@@ -297,3 +329,9 @@ def _do_serve(
         log_level=log_level,
         metrics_collector=metrics_collector,
     )
+    if explorer:
+        kwargs["explorer"] = explorer
+        kwargs["explorer_prefix"] = explorer_prefix
+        kwargs["allow_execute"] = allow_execute
+
+    serve(registry_or_executor, **kwargs)

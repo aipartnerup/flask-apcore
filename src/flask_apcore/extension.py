@@ -109,13 +109,6 @@ class Apcore:
 
         app.cli.add_command(apcore_cli)
 
-        # 5b. Register explorer Blueprint if enabled
-        if settings.explorer_enabled:
-            from flask_apcore.web import create_explorer_blueprint
-
-            bp = create_explorer_blueprint(settings.explorer_url_prefix)
-            app.register_blueprint(bp)
-
         logger.debug("flask-apcore initialized for app %s", app.name)
 
         # 6. Auto-discover if enabled

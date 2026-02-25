@@ -337,6 +337,96 @@ class TestServeTransport:
 
 
 # ---------------------------------------------------------------------------
+# Explorer passthrough
+# ---------------------------------------------------------------------------
+
+
+class TestServeExplorer:
+    """--explorer, --explorer-prefix, --allow-execute flags are passed through."""
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_explorer_flag(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve", "--explorer"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["explorer"] is True
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_explorer_default_false(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["explorer"] is False
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_explorer_prefix_flag(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve", "--explorer-prefix", "/tools"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["explorer_prefix"] == "/tools"
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_explorer_prefix_default(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["explorer_prefix"] == "/explorer"
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_allow_execute_flag(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve", "--allow-execute"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["allow_execute"] is True
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_allow_execute_default_false(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["allow_execute"] is False
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_explorer_config_fallback(self, mock_serve, tmp_path):
+        """If --explorer not passed, uses config fallback."""
+        app = Flask(__name__)
+        app.config["TESTING"] = True
+        app.config["APCORE_MODULE_DIR"] = str(tmp_path / "modules")
+        app.config["APCORE_AUTO_DISCOVER"] = False
+        app.config["APCORE_SERVE_EXPLORER"] = True
+        app.config["APCORE_SERVE_EXPLORER_PREFIX"] = "/tools"
+        app.config["APCORE_SERVE_ALLOW_EXECUTE"] = True
+
+        app.add_url_rule("/e", "e_handler", dummy_handler, methods=["GET"])
+        Apcore(app)
+
+        with app.app_context():
+            r = app.test_cli_runner()
+            r.invoke(args=["apcore", "scan"])
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["explorer"] is True
+        assert call_kwargs.kwargs["explorer_prefix"] == "/tools"
+        assert call_kwargs.kwargs["allow_execute"] is True
+
+
+# ---------------------------------------------------------------------------
 # _do_serve import error
 # ---------------------------------------------------------------------------
 

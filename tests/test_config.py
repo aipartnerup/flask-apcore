@@ -82,10 +82,10 @@ class TestAllDefaults:
         # New Extensions
         assert settings.extensions == []
 
-        # Explorer
-        assert settings.explorer_enabled is False
-        assert settings.explorer_url_prefix == "/apcore"
-        assert settings.explorer_allow_execute is False
+        # MCP Serve Explorer
+        assert settings.serve_explorer is False
+        assert settings.serve_explorer_prefix == "/explorer"
+        assert settings.serve_allow_execute is False
 
 
 # ===========================================================================
@@ -118,8 +118,9 @@ class TestNoneFallback:
             ("APCORE_LOGGING_FORMAT", "logging_format", "json"),
             ("APCORE_LOGGING_LEVEL", "logging_level", "INFO"),
             ("APCORE_EXTENSIONS", "extensions", []),
-            ("APCORE_EXPLORER_ENABLED", "explorer_enabled", False),
-            ("APCORE_EXPLORER_URL_PREFIX", "explorer_url_prefix", "/apcore"),
+            ("APCORE_SERVE_EXPLORER", "serve_explorer", False),
+            ("APCORE_SERVE_EXPLORER_PREFIX", "serve_explorer_prefix", "/explorer"),
+            ("APCORE_SERVE_ALLOW_EXECUTE", "serve_allow_execute", False),
         ],
     )
     def test_none_falls_back_to_default(self, config_key: str, expected_attr: str, expected_default: object) -> None:
@@ -591,68 +592,68 @@ class TestCombinedSettings:
     def test_dataclass_fields_count(self) -> None:
         """Ensure ApcoreSettings has exactly the expected number of fields."""
         fields = dataclasses.fields(ApcoreSettings)
-        # 26 existing + 3 explorer = 29
+        # 26 existing + 3 serve explorer = 29
         assert len(fields) == 29
 
 
 # ===========================================================================
-# 9. Explorer settings
+# 9. MCP Serve Explorer settings
 # ===========================================================================
 
 
-class TestExplorerEnabled:
+class TestServeExplorer:
     def test_default_false(self) -> None:
         s = _load()
-        assert s.explorer_enabled is False
+        assert s.serve_explorer is False
 
     def test_true(self) -> None:
-        s = _load(APCORE_EXPLORER_ENABLED=True)
-        assert s.explorer_enabled is True
+        s = _load(APCORE_SERVE_EXPLORER=True)
+        assert s.serve_explorer is True
 
     def test_none_falls_back(self) -> None:
-        s = _load(APCORE_EXPLORER_ENABLED=None)
-        assert s.explorer_enabled is False
+        s = _load(APCORE_SERVE_EXPLORER=None)
+        assert s.serve_explorer is False
 
     def test_non_bool_raises(self) -> None:
-        with pytest.raises(ValueError, match="APCORE_EXPLORER_ENABLED"):
-            _load(APCORE_EXPLORER_ENABLED="yes")
+        with pytest.raises(ValueError, match="APCORE_SERVE_EXPLORER"):
+            _load(APCORE_SERVE_EXPLORER="yes")
 
 
-class TestExplorerUrlPrefix:
+class TestServeExplorerPrefix:
     def test_default(self) -> None:
         s = _load()
-        assert s.explorer_url_prefix == "/apcore"
+        assert s.serve_explorer_prefix == "/explorer"
 
     def test_custom(self) -> None:
-        s = _load(APCORE_EXPLORER_URL_PREFIX="/api-explorer")
-        assert s.explorer_url_prefix == "/api-explorer"
+        s = _load(APCORE_SERVE_EXPLORER_PREFIX="/tools")
+        assert s.serve_explorer_prefix == "/tools"
 
     def test_none_falls_back(self) -> None:
-        s = _load(APCORE_EXPLORER_URL_PREFIX=None)
-        assert s.explorer_url_prefix == "/apcore"
-
-    def test_non_string_raises(self) -> None:
-        with pytest.raises(ValueError, match="APCORE_EXPLORER_URL_PREFIX"):
-            _load(APCORE_EXPLORER_URL_PREFIX=123)
+        s = _load(APCORE_SERVE_EXPLORER_PREFIX=None)
+        assert s.serve_explorer_prefix == "/explorer"
 
     def test_empty_string_raises(self) -> None:
-        with pytest.raises(ValueError, match="APCORE_EXPLORER_URL_PREFIX"):
-            _load(APCORE_EXPLORER_URL_PREFIX="")
+        with pytest.raises(ValueError, match="APCORE_SERVE_EXPLORER_PREFIX"):
+            _load(APCORE_SERVE_EXPLORER_PREFIX="")
+
+    def test_non_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="APCORE_SERVE_EXPLORER_PREFIX"):
+            _load(APCORE_SERVE_EXPLORER_PREFIX=123)
 
 
-class TestExplorerAllowExecute:
+class TestServeAllowExecute:
     def test_default_false(self) -> None:
         s = _load()
-        assert s.explorer_allow_execute is False
+        assert s.serve_allow_execute is False
 
     def test_true(self) -> None:
-        s = _load(APCORE_EXPLORER_ALLOW_EXECUTE=True)
-        assert s.explorer_allow_execute is True
+        s = _load(APCORE_SERVE_ALLOW_EXECUTE=True)
+        assert s.serve_allow_execute is True
 
     def test_none_falls_back(self) -> None:
-        s = _load(APCORE_EXPLORER_ALLOW_EXECUTE=None)
-        assert s.explorer_allow_execute is False
+        s = _load(APCORE_SERVE_ALLOW_EXECUTE=None)
+        assert s.serve_allow_execute is False
 
     def test_non_bool_raises(self) -> None:
-        with pytest.raises(ValueError, match="APCORE_EXPLORER_ALLOW_EXECUTE"):
-            _load(APCORE_EXPLORER_ALLOW_EXECUTE="yes")
+        with pytest.raises(ValueError, match="APCORE_SERVE_ALLOW_EXECUTE"):
+            _load(APCORE_SERVE_ALLOW_EXECUTE="yes")

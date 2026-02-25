@@ -13,7 +13,7 @@ Flask Extension for [apcore](https://github.com/aipartnerup/apcore-python) (AI-P
 - **Observability** -- distributed tracing, metrics, and structured JSON logging
 - **Input validation** -- validate tool inputs against Pydantic schemas before execution
 - **CLI-first workflow** -- `flask apcore scan` + `flask apcore serve` for zero-intrusion integration
-- **Schema explorer** -- built-in browser UI for inspecting modules with Try-it execution
+- **MCP Tool Explorer** -- browser UI for inspecting modules via `flask apcore serve --explorer`
 
 ## Requirements
 
@@ -188,6 +188,9 @@ Options:
   --name TEXT              MCP server name (default: apcore-mcp)
   --validate-inputs        Validate tool inputs against schemas
   --log-level [DEBUG|INFO|WARNING|ERROR]
+  --explorer               Enable the MCP Tool Explorer UI
+  --explorer-prefix TEXT   URL prefix for explorer (default: /explorer)
+  --allow-execute          Allow Try-it execution in the explorer
 ```
 
 ## Configuration
@@ -230,10 +233,10 @@ app.config.update(
     APCORE_LOGGING_FORMAT="json",       # Format: json, text
     APCORE_LOGGING_LEVEL="INFO",        # Level: trace, debug, info, warn, error, fatal
 
-    # Explorer (dev/staging only — no built-in auth)
-    APCORE_EXPLORER_ENABLED=False,      # Enable schema explorer Blueprint
-    APCORE_EXPLORER_URL_PREFIX="/apcore",# URL prefix for explorer routes
-    APCORE_EXPLORER_ALLOW_EXECUTE=False, # Allow Try-it execution (calls Executor)
+    # MCP Serve Explorer (dev/staging only — no built-in auth)
+    APCORE_SERVE_EXPLORER=False,             # Enable Tool Explorer UI in MCP server
+    APCORE_SERVE_EXPLORER_PREFIX="/explorer", # URL prefix for explorer
+    APCORE_SERVE_ALLOW_EXECUTE=False,        # Allow Try-it execution in explorer
 )
 ```
 
@@ -254,31 +257,17 @@ app.config.update(
 
 These are wired into the apcore Executor as middleware, providing tracing spans, latency metrics, and structured log entries for every module execution.
 
-## Schema Explorer
+## MCP Tool Explorer
 
-Enable the built-in browser UI to inspect registered modules and execute them interactively.
+The MCP Tool Explorer is a browser UI provided by [apcore-mcp](https://github.com/aipartnerup/apcore-mcp) for inspecting registered modules and executing them interactively.
 
 > **Security:** Explorer endpoints are unauthenticated. Only enable in development/staging. Do NOT enable in production without adding your own auth layer.
 
-```python
-app.config.update(
-    APCORE_EXPLORER_ENABLED=True,           # dev/staging only
-    APCORE_EXPLORER_ALLOW_EXECUTE=True,     # optional: enable Try-it execution
-)
-```
-
 ```bash
-flask run --port 5000
+flask apcore serve --http --explorer --allow-execute
 ```
 
-Browse to:
-
-- `http://127.0.0.1:5000/apcore/` -- Interactive explorer with Try-it
-- `http://127.0.0.1:5000/apcore/modules` -- Module list (JSON)
-- `http://127.0.0.1:5000/apcore/modules/<id>` -- Module detail (JSON)
-- `POST http://127.0.0.1:5000/apcore/call/<id>` -- Execute a module (requires `APCORE_EXPLORER_ALLOW_EXECUTE=True`)
-
-The Try-it feature generates an input form from each module's schema, executes via the apcore Executor (with full middleware, ACL, and observability), and displays the result inline.
+Browse to `http://127.0.0.1:9100/explorer/` to view the interactive explorer with Try-it execution.
 
 ## Docker Demo
 
