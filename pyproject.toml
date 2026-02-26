@@ -39,7 +39,7 @@ dependencies = [
 [project.optional-dependencies]
 smorest = ["flask-smorest>=0.42"]
 restx = ["flask-restx>=1.0"]
-mcp = ["apcore-mcp>=0.5.1"]
+mcp = ["apcore-mcp>=0.6.0"]
 dev = [
     "pytest>=7.0",
     "pytest-flask>=1.0",
@@ -48,7 +48,7 @@ dev = [
     "mypy>=1.0",
     "pre-commit>=3.0",
     "coverage>=7.0",
-    "apdev[dev]>=0.1.6",
+    "apdev[dev]>=0.2.0",
 ]
 
 [tool.hatch.build.targets.wheel]

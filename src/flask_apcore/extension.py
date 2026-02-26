@@ -129,6 +129,9 @@ class Apcore:
             if settings.module_packages:
                 self._scan_packages_for_modules(registry, settings.module_packages)
 
+            # 6c. Flatten Pydantic model params for all registered modules
+            self._flatten_registered_modules(registry)
+
             logger.info(
                 "flask-apcore: auto-discovery complete: %d total modules",
                 registry.count,
@@ -150,6 +153,42 @@ class Apcore:
             logger.debug("Registered event listeners on registry")
         except (AttributeError, TypeError):
             logger.debug("Registry does not support events; " "skipping event listener registration")
+
+    def _flatten_registered_modules(self, registry: Any) -> None:
+        """Re-register modules whose functions have Pydantic model parameters.
+
+        YAML-loaded and @module-decorated functions may accept Pydantic
+        BaseModel params (e.g. ``body: TaskCreate``).  MCP tools should
+        expose flat scalar fields instead.  This method iterates the
+        registry and replaces any such modules with versions whose
+        functions are wrapped by ``_flatten_pydantic_params``.
+        """
+        from flask_apcore.output.registry_writer import _flatten_pydantic_params
+
+        for module_id in list(registry.module_ids):
+            module = registry.get(module_id)
+            func = getattr(module, "_func", None)
+            if func is None:
+                continue
+            wrapped = _flatten_pydantic_params(func)
+            if wrapped is func:
+                continue  # no Pydantic params, skip
+
+            from apcore import FunctionModule
+
+            new_module = FunctionModule(
+                func=wrapped,
+                module_id=module.module_id,
+                description=module.description,
+                documentation=getattr(module, "documentation", None),
+                tags=getattr(module, "tags", None),
+                version=getattr(module, "version", "1.0.0"),
+                annotations=getattr(module, "annotations", None),
+                metadata=getattr(module, "metadata", None),
+            )
+            registry.unregister(module_id)
+            registry.register(module_id, new_module)
+            logger.debug("Flattened Pydantic params for module: %s", module_id)
 
     def _load_bindings(self, registry: Any, module_dir: str, pattern: str) -> None:
         """Load YAML binding files from the module directory.
