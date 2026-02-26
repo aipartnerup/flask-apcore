@@ -4,10 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "flask-apcore"
-version = "0.2.0"
+version = "0.2.1"
 description = "Flask Extension for apcore AI-Perceivable Core integration, exposes Flask routes as MCP tools with auto-discovery, schema inference, YAML binding, and built-in observability. Supports MCP server (stdio/HTTP) for LLM tool integration."
 requires-python = ">=3.11"
-license = "MIT"
+readme = "README.md"
+license = "Apache-2.0"
 authors = [
     { name = "aipartnerup", email = "tercel.yi@gmail.com" },
 ]
@@ -69,3 +70,9 @@ base_package = "flask_apcore"
 [tool.mypy]
 python_version = "3.11"
 strict = true
+
+[project.urls]
+Homepage = "https://github.com/aipartnerup/"
+Repository = "https://github.com/aipartnerup/flask-apcore"
+Documentation = "https://github.com/aipartnerup/flask-apcore#readme"
+Issues = "https://github.com/aipartnerup/flash-apcore/issues"
