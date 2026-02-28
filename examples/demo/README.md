@@ -73,6 +73,57 @@ The demo ships with 2 seed tasks (id 1 and 2). Use these example inputs in the e
 | `update_task.put` | `{"task_id": 1, "title": "Try flask-apcore (done!)", "done": true}` |
 | `delete_task.delete` | `{"task_id": 2}` |
 
+### 5. JWT Authentication (optional)
+
+Protect MCP endpoints with JWT Bearer tokens (requires `apcore-mcp>=0.7.0`):
+
+```bash
+flask apcore serve --http --host 127.0.0.1 --port 9100 \
+    --jwt-secret "my-secret-key" \
+    --jwt-algorithm HS256 \
+    --jwt-audience task-manager \
+    --jwt-issuer https://auth.example.com \
+    --explorer --allow-execute
+```
+
+Or set via Flask config / environment variables:
+
+```python
+app.config.update(
+    APCORE_SERVE_JWT_SECRET="my-secret-key",
+    APCORE_SERVE_JWT_ALGORITHM="HS256",
+    APCORE_SERVE_JWT_AUDIENCE="task-manager",
+    APCORE_SERVE_JWT_ISSUER="https://auth.example.com",
+)
+```
+
+#### Generate a test token
+
+```bash
+python -c "
+import jwt, time
+token = jwt.encode(
+    {'sub': 'demo-user', 'aud': 'task-manager', 'iss': 'https://auth.example.com', 'exp': int(time.time()) + 3600},
+    'my-secret-key', algorithm='HS256'
+)
+print(token)
+"
+```
+
+#### Test with curl
+
+```bash
+TOKEN=$(python -c "import jwt,time; print(jwt.encode({'sub':'demo','aud':'task-manager','iss':'https://auth.example.com','exp':int(time.time())+3600},'my-secret-key','HS256'))")
+
+# Health check (no auth required)
+curl http://127.0.0.1:9100/health
+
+# MCP endpoint (requires Bearer token)
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:9100/mcp -d '...'
+```
+
+When JWT is enabled, the Explorer UI shows a Bearer token input field for authentication.
+
 ## Docker
 
 ```bash
@@ -97,3 +148,4 @@ docker compose down
 - **MCP server** — HTTP transport on port 9100
 - **Observability** — Tracing (stdout), metrics, and structured JSON logging
 - **Input validation** — `--validate-inputs` checks tool inputs against schemas
+- **JWT authentication** — `--jwt-secret` protects MCP endpoints with Bearer tokens (apcore-mcp 0.7.0+)

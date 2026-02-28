@@ -209,6 +209,30 @@ def scan_command(source, output, output_dir, dry_run, include, exclude):
     default=False,
     help="Allow tool execution from the MCP Tool Explorer UI.",
 )
+@click.option(
+    "--jwt-secret",
+    type=str,
+    default=None,
+    help="JWT secret key for authenticating MCP requests (HTTP transports only).",
+)
+@click.option(
+    "--jwt-algorithm",
+    type=click.Choice(["HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "ES256", "ES384", "ES512"]),
+    default=None,
+    help="JWT signing algorithm. Default: APCORE_SERVE_JWT_ALGORITHM config.",
+)
+@click.option(
+    "--jwt-audience",
+    type=str,
+    default=None,
+    help="Expected JWT audience claim.",
+)
+@click.option(
+    "--jwt-issuer",
+    type=str,
+    default=None,
+    help="Expected JWT issuer claim.",
+)
 @with_appcontext
 def serve_command(
     transport: str,
@@ -220,6 +244,10 @@ def serve_command(
     explorer: bool,
     explorer_prefix: str | None,
     allow_execute: bool,
+    jwt_secret: str | None,
+    jwt_algorithm: str | None,
+    jwt_audience: str | None,
+    jwt_issuer: str | None,
 ) -> None:
     """Start an MCP server exposing registered apcore modules as tools."""
     app = current_app._get_current_object()
@@ -244,6 +272,32 @@ def serve_command(
         explorer_prefix = settings.serve_explorer_prefix
     if not allow_execute:
         allow_execute = settings.serve_allow_execute
+
+    # JWT authentication config fallbacks
+    if jwt_secret is None:
+        jwt_secret = settings.serve_jwt_secret
+    if jwt_algorithm is None:
+        jwt_algorithm = settings.serve_jwt_algorithm
+    if jwt_audience is None:
+        jwt_audience = settings.serve_jwt_audience
+    if jwt_issuer is None:
+        jwt_issuer = settings.serve_jwt_issuer
+
+    # Build authenticator if JWT secret is provided
+    authenticator = None
+    if jwt_secret is not None:
+        try:
+            from apcore_mcp import JWTAuthenticator
+        except ImportError:
+            raise click.ClickException(
+                "apcore-mcp>=0.7.0 is required for JWT authentication. " "Install with: pip install flask-apcore[mcp]"
+            )
+        authenticator = JWTAuthenticator(
+            jwt_secret,
+            algorithms=[jwt_algorithm],
+            audience=jwt_audience,
+            issuer=jwt_issuer,
+        )
 
     # Check module count
     if registry.count == 0:
@@ -289,6 +343,7 @@ def serve_command(
         explorer=explorer,
         explorer_prefix=explorer_prefix,
         allow_execute=allow_execute,
+        authenticator=authenticator,
     )
 
 
@@ -305,6 +360,7 @@ def _do_serve(
     explorer: bool = False,
     explorer_prefix: str = "/explorer",
     allow_execute: bool = False,
+    authenticator: Any | None = None,
 ) -> None:
     """Delegate to apcore_mcp.serve().
 
@@ -333,5 +389,7 @@ def _do_serve(
         kwargs["explorer"] = explorer
         kwargs["explorer_prefix"] = explorer_prefix
         kwargs["allow_execute"] = allow_execute
+    if authenticator is not None:
+        kwargs["authenticator"] = authenticator
 
     serve(registry_or_executor, **kwargs)

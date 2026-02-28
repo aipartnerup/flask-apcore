@@ -1,4 +1,4 @@
-"""Task Manager API — flask-apcore v0.1.0 demo application.
+"""Task Manager API — flask-apcore demo application.
 
 Demonstrates:
 - Flask CRUD routes with Pydantic schemas
@@ -6,6 +6,7 @@ Demonstrates:
 - @module decorator for standalone modules
 - Observability (tracing, metrics, structured logging)
 - MCP server via streamable-http transport
+- JWT authentication for MCP endpoints (apcore-mcp 0.7.0+)
 """
 from __future__ import annotations
 
@@ -68,6 +69,12 @@ app.config.update(
     APCORE_LOGGING_ENABLED=True,
     APCORE_LOGGING_FORMAT="json",
     APCORE_SERVE_VALIDATE_INPUTS=True,
+    # JWT Authentication (apcore-mcp 0.7.0+)
+    # Uncomment and set a secret to enable JWT auth on HTTP transports:
+    # APCORE_SERVE_JWT_SECRET="change-me-in-production",
+    # APCORE_SERVE_JWT_ALGORITHM="HS256",
+    # APCORE_SERVE_JWT_AUDIENCE="task-manager",
+    # APCORE_SERVE_JWT_ISSUER="https://auth.example.com",
 )
 
 

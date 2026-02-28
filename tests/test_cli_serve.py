@@ -427,6 +427,154 @@ class TestServeExplorer:
 
 
 # ---------------------------------------------------------------------------
+# JWT authentication passthrough
+# ---------------------------------------------------------------------------
+
+
+class TestServeJwtAuth:
+    """--jwt-secret, --jwt-algorithm, --jwt-audience, --jwt-issuer flags."""
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_jwt_secret_flag(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve", "--jwt-secret", "my-secret"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["authenticator"] is not None
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_jwt_no_secret_no_authenticator(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["authenticator"] is None
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_jwt_algorithm_flag(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve", "--jwt-secret", "s", "--jwt-algorithm", "HS512"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["authenticator"] is not None
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_jwt_audience_flag(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve", "--jwt-secret", "s", "--jwt-audience", "my-api"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["authenticator"] is not None
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_jwt_issuer_flag(self, mock_serve, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(
+            args=["apcore", "serve", "--jwt-secret", "s", "--jwt-issuer", "https://auth.example.com"]
+        )
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["authenticator"] is not None
+
+    @patch("flask_apcore.cli._do_serve")
+    def test_jwt_config_fallback(self, mock_serve, tmp_path):
+        """If --jwt-secret not passed, uses config fallback."""
+        app = Flask(__name__)
+        app.config["TESTING"] = True
+        app.config["APCORE_MODULE_DIR"] = str(tmp_path / "modules")
+        app.config["APCORE_AUTO_DISCOVER"] = False
+        app.config["APCORE_SERVE_JWT_SECRET"] = "config-secret-long-enough"
+
+        app.add_url_rule("/j", "j_handler", dummy_handler, methods=["GET"])
+        Apcore(app)
+
+        with app.app_context():
+            r = app.test_cli_runner()
+            r.invoke(args=["apcore", "scan"])
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve"])
+
+        assert result.exit_code == 0, result.output
+        call_kwargs = mock_serve.call_args
+        assert call_kwargs.kwargs["authenticator"] is not None
+
+    def test_invalid_jwt_algorithm_rejected(self, serve_app):
+        runner = serve_app.test_cli_runner()
+        result = runner.invoke(args=["apcore", "serve", "--jwt-secret", "s", "--jwt-algorithm", "NONE"])
+        assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# _do_serve authenticator forwarding
+# ---------------------------------------------------------------------------
+
+
+class TestDoServeForwardsAuthenticator:
+    """_do_serve passes authenticator through to apcore_mcp.serve()."""
+
+    @patch("apcore_mcp.serve")
+    def test_authenticator_forwarded(self, mock_serve):
+        from flask_apcore.cli import _do_serve
+
+        sentinel = MagicMock()
+        _do_serve(
+            MagicMock(),
+            transport="stdio",
+            host="127.0.0.1",
+            port=9100,
+            name="test",
+            authenticator=sentinel,
+        )
+
+        mock_serve.assert_called_once()
+        assert mock_serve.call_args.kwargs["authenticator"] is sentinel
+
+    @patch("apcore_mcp.serve")
+    def test_no_authenticator_not_in_kwargs(self, mock_serve):
+        from flask_apcore.cli import _do_serve
+
+        _do_serve(
+            MagicMock(),
+            transport="stdio",
+            host="127.0.0.1",
+            port=9100,
+            name="test",
+        )
+
+        mock_serve.assert_called_once()
+        assert "authenticator" not in mock_serve.call_args.kwargs
+
+
+# ---------------------------------------------------------------------------
+# JWTAuthenticator import error
+# ---------------------------------------------------------------------------
+
+
+class TestJwtAuthenticatorImportError:
+    """serve raises ClickException when apcore-mcp < 0.7.0 (no JWTAuthenticator)."""
+
+    def test_jwt_authenticator_import_error(self, serve_app):
+        import types
+
+        # Create a fake apcore_mcp module without JWTAuthenticator
+        fake_module = types.ModuleType("apcore_mcp")
+        fake_module.serve = MagicMock()
+
+        with patch.dict("sys.modules", {"apcore_mcp": fake_module}):
+            runner = serve_app.test_cli_runner()
+            result = runner.invoke(args=["apcore", "serve", "--jwt-secret", "a-long-enough-secret"])
+
+            assert result.exit_code != 0
+            assert "apcore-mcp>=0.7.0" in result.output
+
+
+# ---------------------------------------------------------------------------
 # _do_serve import error
 # ---------------------------------------------------------------------------
 

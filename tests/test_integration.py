@@ -445,6 +445,33 @@ class TestFullPipeline:
         # metrics_collector should be passed
         assert call_kwargs.kwargs["metrics_collector"] is not None
 
+    @patch("flask_apcore.cli._do_serve")
+    def test_scan_with_jwt_then_serve(self, mock_serve, tmp_path):
+        """Full pipeline with JWT authentication enabled."""
+        app = Flask(__name__)
+        app.config["APCORE_MODULE_DIR"] = str(tmp_path)
+        app.config["APCORE_AUTO_DISCOVER"] = False
+        app.config["APCORE_SERVE_JWT_SECRET"] = "integration-test-secret"
+        app.config["APCORE_SERVE_JWT_ALGORITHM"] = "HS256"
+        app.config["APCORE_SERVE_JWT_AUDIENCE"] = "test-api"
+        app.config["APCORE_SERVE_JWT_ISSUER"] = "https://auth.test.com"
+
+        app.add_url_rule("/users", "list_users", list_users, methods=["GET"])
+
+        Apcore(app)
+
+        runner = app.test_cli_runner()
+
+        scan_result = runner.invoke(args=["apcore", "scan"])
+        assert scan_result.exit_code == 0, scan_result.output
+
+        serve_result = runner.invoke(args=["apcore", "serve"])
+        assert serve_result.exit_code == 0, serve_result.output
+
+        call_kwargs = mock_serve.call_args
+        # authenticator should be constructed from config
+        assert call_kwargs.kwargs["authenticator"] is not None
+
 
 # ---------------------------------------------------------------------------
 # TestMultiAppIsolation: separate registries per app

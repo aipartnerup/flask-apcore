@@ -45,6 +45,11 @@ DEFAULT_SERVE_EXPLORER = False
 DEFAULT_SERVE_EXPLORER_PREFIX = "/explorer"
 DEFAULT_SERVE_ALLOW_EXECUTE = False
 
+# JWT Authentication defaults (apcore-mcp 0.7.0+)
+DEFAULT_SERVE_JWT_ALGORITHM = "HS256"
+MIN_HMAC_SECRET_LENGTH = 16
+HMAC_ALGORITHMS = ("HS256", "HS384", "HS512")
+
 # ---------------------------------------------------------------------------
 # Valid choices
 # ---------------------------------------------------------------------------
@@ -54,6 +59,7 @@ VALID_SERVE_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 VALID_TRACING_EXPORTERS = ("stdout", "memory", "otlp")
 VALID_LOGGING_FORMATS = ("json", "text")
 VALID_LOGGING_LEVELS = ("trace", "debug", "info", "warn", "error", "fatal")
+VALID_JWT_ALGORITHMS = ("HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "ES256", "ES384", "ES512")
 
 
 @dataclass(frozen=True)
@@ -101,6 +107,12 @@ class ApcoreSettings:
     serve_explorer: bool
     serve_explorer_prefix: str
     serve_allow_execute: bool
+
+    # JWT Authentication (apcore-mcp 0.7.0+)
+    serve_jwt_secret: str | None
+    serve_jwt_algorithm: str
+    serve_jwt_audience: str | None
+    serve_jwt_issuer: str | None
 
 
 def load_settings(app: Flask) -> ApcoreSettings:
@@ -350,6 +362,46 @@ def load_settings(app: Flask) -> ApcoreSettings:
         actual = type(serve_allow_execute).__name__
         raise ValueError(f"APCORE_SERVE_ALLOW_EXECUTE must be a boolean. Got: {actual}")
 
+    # === JWT Authentication settings ===
+
+    # --- serve_jwt_secret ---
+    serve_jwt_secret = app.config.get("APCORE_SERVE_JWT_SECRET", None)
+    if serve_jwt_secret is not None and (not isinstance(serve_jwt_secret, str) or len(serve_jwt_secret) == 0):
+        raise ValueError("APCORE_SERVE_JWT_SECRET must be a non-empty string if set.")
+
+    # --- serve_jwt_algorithm (read early for secret length check) ---
+    serve_jwt_algorithm = app.config.get("APCORE_SERVE_JWT_ALGORITHM", DEFAULT_SERVE_JWT_ALGORITHM)
+    if serve_jwt_algorithm is None:
+        serve_jwt_algorithm = DEFAULT_SERVE_JWT_ALGORITHM
+
+    # Enforce minimum secret length for HMAC algorithms
+    if (
+        serve_jwt_secret is not None
+        and serve_jwt_algorithm in HMAC_ALGORITHMS
+        and len(serve_jwt_secret) < MIN_HMAC_SECRET_LENGTH
+    ):
+        raise ValueError(
+            f"APCORE_SERVE_JWT_SECRET must be at least {MIN_HMAC_SECRET_LENGTH} characters "
+            f"for HMAC algorithm {serve_jwt_algorithm}."
+        )
+
+    # --- serve_jwt_algorithm (validate choices) ---
+    if serve_jwt_algorithm not in VALID_JWT_ALGORITHMS:
+        choices = ", ".join(VALID_JWT_ALGORITHMS)
+        raise ValueError(f"APCORE_SERVE_JWT_ALGORITHM must be one of: {choices}." f" Got: '{serve_jwt_algorithm}'")
+
+    # --- serve_jwt_audience ---
+    serve_jwt_audience = app.config.get("APCORE_SERVE_JWT_AUDIENCE", None)
+    if serve_jwt_audience is not None and not isinstance(serve_jwt_audience, str):
+        actual = type(serve_jwt_audience).__name__
+        raise ValueError(f"APCORE_SERVE_JWT_AUDIENCE must be a string. Got: {actual}")
+
+    # --- serve_jwt_issuer ---
+    serve_jwt_issuer = app.config.get("APCORE_SERVE_JWT_ISSUER", None)
+    if serve_jwt_issuer is not None and not isinstance(serve_jwt_issuer, str):
+        actual = type(serve_jwt_issuer).__name__
+        raise ValueError(f"APCORE_SERVE_JWT_ISSUER must be a string. Got: {actual}")
+
     return ApcoreSettings(
         module_dir=module_dir,
         auto_discover=auto_discover,
@@ -380,4 +432,8 @@ def load_settings(app: Flask) -> ApcoreSettings:
         serve_explorer=serve_explorer,
         serve_explorer_prefix=serve_explorer_prefix,
         serve_allow_execute=serve_allow_execute,
+        serve_jwt_secret=serve_jwt_secret,
+        serve_jwt_algorithm=serve_jwt_algorithm,
+        serve_jwt_audience=serve_jwt_audience,
+        serve_jwt_issuer=serve_jwt_issuer,
     )

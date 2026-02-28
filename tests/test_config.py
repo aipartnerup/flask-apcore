@@ -87,6 +87,12 @@ class TestAllDefaults:
         assert settings.serve_explorer_prefix == "/explorer"
         assert settings.serve_allow_execute is False
 
+        # JWT Authentication
+        assert settings.serve_jwt_secret is None
+        assert settings.serve_jwt_algorithm == "HS256"
+        assert settings.serve_jwt_audience is None
+        assert settings.serve_jwt_issuer is None
+
 
 # ===========================================================================
 # 2. None fallback to default
@@ -121,6 +127,7 @@ class TestNoneFallback:
             ("APCORE_SERVE_EXPLORER", "serve_explorer", False),
             ("APCORE_SERVE_EXPLORER_PREFIX", "serve_explorer_prefix", "/explorer"),
             ("APCORE_SERVE_ALLOW_EXECUTE", "serve_allow_execute", False),
+            ("APCORE_SERVE_JWT_ALGORITHM", "serve_jwt_algorithm", "HS256"),
         ],
     )
     def test_none_falls_back_to_default(self, config_key: str, expected_attr: str, expected_default: object) -> None:
@@ -137,6 +144,9 @@ class TestNoneFallback:
             ("APCORE_SERVE_LOG_LEVEL", "serve_log_level"),
             ("APCORE_TRACING_OTLP_ENDPOINT", "tracing_otlp_endpoint"),
             ("APCORE_METRICS_BUCKETS", "metrics_buckets"),
+            ("APCORE_SERVE_JWT_SECRET", "serve_jwt_secret"),
+            ("APCORE_SERVE_JWT_AUDIENCE", "serve_jwt_audience"),
+            ("APCORE_SERVE_JWT_ISSUER", "serve_jwt_issuer"),
         ],
     )
     def test_none_stays_none_for_optional_fields(self, config_key: str, expected_attr: str) -> None:
@@ -592,8 +602,8 @@ class TestCombinedSettings:
     def test_dataclass_fields_count(self) -> None:
         """Ensure ApcoreSettings has exactly the expected number of fields."""
         fields = dataclasses.fields(ApcoreSettings)
-        # 26 existing + 3 serve explorer = 29
-        assert len(fields) == 29
+        # 26 existing + 3 serve explorer + 4 JWT auth = 33
+        assert len(fields) == 33
 
 
 # ===========================================================================
@@ -657,3 +667,85 @@ class TestServeAllowExecute:
     def test_non_bool_raises(self) -> None:
         with pytest.raises(ValueError, match="APCORE_SERVE_ALLOW_EXECUTE"):
             _load(APCORE_SERVE_ALLOW_EXECUTE="yes")
+
+
+# ===========================================================================
+# 10. JWT Authentication settings
+# ===========================================================================
+
+
+class TestServeJwtSecret:
+    def test_none_default(self) -> None:
+        s = _load()
+        assert s.serve_jwt_secret is None
+
+    def test_valid_string(self) -> None:
+        s = _load(APCORE_SERVE_JWT_SECRET="my-secret-key-long-enough")
+        assert s.serve_jwt_secret == "my-secret-key-long-enough"
+
+    def test_empty_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="APCORE_SERVE_JWT_SECRET"):
+            _load(APCORE_SERVE_JWT_SECRET="")
+
+    def test_non_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="APCORE_SERVE_JWT_SECRET"):
+            _load(APCORE_SERVE_JWT_SECRET=12345)
+
+    def test_short_hmac_secret_raises(self) -> None:
+        with pytest.raises(ValueError, match="at least 16 characters"):
+            _load(APCORE_SERVE_JWT_SECRET="short")
+
+    def test_short_secret_ok_for_rsa(self) -> None:
+        s = _load(APCORE_SERVE_JWT_SECRET="short", APCORE_SERVE_JWT_ALGORITHM="RS256")
+        assert s.serve_jwt_secret == "short"
+
+    def test_exactly_16_chars_ok(self) -> None:
+        s = _load(APCORE_SERVE_JWT_SECRET="a" * 16)
+        assert s.serve_jwt_secret == "a" * 16
+
+
+class TestServeJwtAlgorithm:
+    @pytest.mark.parametrize("val", ["HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "ES256", "ES384", "ES512"])
+    def test_valid_algorithms(self, val: str) -> None:
+        s = _load(APCORE_SERVE_JWT_ALGORITHM=val)
+        assert s.serve_jwt_algorithm == val
+
+    def test_default_hs256(self) -> None:
+        s = _load()
+        assert s.serve_jwt_algorithm == "HS256"
+
+    def test_none_falls_back(self) -> None:
+        s = _load(APCORE_SERVE_JWT_ALGORITHM=None)
+        assert s.serve_jwt_algorithm == "HS256"
+
+    def test_invalid_algorithm_raises(self) -> None:
+        with pytest.raises(ValueError, match="APCORE_SERVE_JWT_ALGORITHM"):
+            _load(APCORE_SERVE_JWT_ALGORITHM="NONE")
+
+
+class TestServeJwtAudience:
+    def test_none_default(self) -> None:
+        s = _load()
+        assert s.serve_jwt_audience is None
+
+    def test_valid_string(self) -> None:
+        s = _load(APCORE_SERVE_JWT_AUDIENCE="my-api")
+        assert s.serve_jwt_audience == "my-api"
+
+    def test_non_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="APCORE_SERVE_JWT_AUDIENCE"):
+            _load(APCORE_SERVE_JWT_AUDIENCE=123)
+
+
+class TestServeJwtIssuer:
+    def test_none_default(self) -> None:
+        s = _load()
+        assert s.serve_jwt_issuer is None
+
+    def test_valid_string(self) -> None:
+        s = _load(APCORE_SERVE_JWT_ISSUER="https://auth.example.com")
+        assert s.serve_jwt_issuer == "https://auth.example.com"
+
+    def test_non_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="APCORE_SERVE_JWT_ISSUER"):
+            _load(APCORE_SERVE_JWT_ISSUER=True)

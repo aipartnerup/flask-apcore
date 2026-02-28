@@ -14,6 +14,7 @@ Flask Extension for [apcore](https://github.com/aipartnerup/apcore-python) (AI-P
 - **Input validation** -- validate tool inputs against Pydantic schemas before execution
 - **CLI-first workflow** -- `flask apcore scan` + `flask apcore serve` for zero-intrusion integration
 - **MCP Tool Explorer** -- browser UI for inspecting modules via `flask apcore serve --explorer`
+- **JWT authentication** -- protect MCP endpoints with Bearer tokens via `--jwt-secret` (apcore-mcp 0.7.0+)
 
 ## Requirements
 
@@ -191,6 +192,10 @@ Options:
   --explorer               Enable the MCP Tool Explorer UI
   --explorer-prefix TEXT   URL prefix for explorer (default: /explorer)
   --allow-execute          Allow Try-it execution in the explorer
+  --jwt-secret TEXT        JWT secret key for MCP auth (HTTP only)
+  --jwt-algorithm ALGO     JWT signing algorithm (default: HS256)
+  --jwt-audience TEXT      Expected JWT audience claim
+  --jwt-issuer TEXT        Expected JWT issuer claim
 ```
 
 ## Configuration
@@ -233,10 +238,16 @@ app.config.update(
     APCORE_LOGGING_FORMAT="json",       # Format: json, text
     APCORE_LOGGING_LEVEL="INFO",        # Level: trace, debug, info, warn, error, fatal
 
-    # MCP Serve Explorer (dev/staging only — no built-in auth)
+    # MCP Serve Explorer
     APCORE_SERVE_EXPLORER=False,             # Enable Tool Explorer UI in MCP server
     APCORE_SERVE_EXPLORER_PREFIX="/explorer", # URL prefix for explorer
     APCORE_SERVE_ALLOW_EXECUTE=False,        # Allow Try-it execution in explorer
+
+    # JWT Authentication (apcore-mcp 0.7.0+, HTTP transports only)
+    APCORE_SERVE_JWT_SECRET=None,            # JWT secret key (enables auth when set)
+    APCORE_SERVE_JWT_ALGORITHM="HS256",      # Signing algorithm
+    APCORE_SERVE_JWT_AUDIENCE=None,          # Expected audience claim
+    APCORE_SERVE_JWT_ISSUER=None,            # Expected issuer claim
 )
 ```
 
@@ -261,13 +272,31 @@ These are wired into the apcore Executor as middleware, providing tracing spans,
 
 The MCP Tool Explorer is a browser UI provided by [apcore-mcp](https://github.com/aipartnerup/apcore-mcp) for inspecting registered modules and executing them interactively.
 
-> **Security:** Explorer endpoints are unauthenticated. Only enable in development/staging. Do NOT enable in production without adding your own auth layer.
+> **Security:** Without JWT authentication, Explorer endpoints are unauthenticated. Either enable `--jwt-secret` or only expose in development/staging environments.
 
 ```bash
 flask apcore serve --http --explorer --allow-execute
 ```
 
 Browse to `http://127.0.0.1:9100/explorer/` to view the interactive explorer with Try-it execution.
+
+## JWT Authentication
+
+Protect MCP endpoints with JWT Bearer tokens (requires `apcore-mcp>=0.7.0`, HTTP transports only):
+
+```bash
+flask apcore serve --http \
+    --jwt-secret "change-me-in-production" \
+    --jwt-algorithm HS256 \
+    --jwt-audience my-api \
+    --jwt-issuer https://auth.example.com \
+    --explorer --allow-execute
+```
+
+When JWT is enabled:
+- All MCP endpoints require a valid `Authorization: Bearer <token>` header
+- The Explorer UI shows a token input field for authentication
+- Health check (`/health`) and Explorer pages remain accessible without a token
 
 ## Docker Demo
 
